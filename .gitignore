@@ -1,0 +1,55 @@
+# Build artifacts
+*.o
+*.lo
+*.la
+*.a
+*.so
+*.dylib
+
+# Libtool
+.libs/
+.ltdep
+.dep
+
+# Configure artifacts
+config.log
+config.status
+config.cache
+autom4te.cache/
+
+# Build directories
+build/
+*.dSYM/
+
+# Compiled binaries
+src/fuse/fuse-xfs
+src/cli/xfs-cli
+src/xfsutil/xfs-rcopy
+
+# xfsprogs compiled binaries
+src/xfsprogs/copy/xfs_copy
+src/xfsprogs/quota/xfs_quota
+src/xfsprogs/repair/xfs_repair
+src/xfsprogs/logprint/xfs_logprint
+src/xfsprogs/mdrestore/xfs_mdrestore
+src/xfsprogs/growfs/xfs_growfs
+src/xfsprogs/db/xfs_db
+src/xfsprogs/mkfs/mkfs.xfs
+src/xfsprogs/mkfs/fstyp
+src/xfsprogs/rtcp/xfs_rtcp
+src/xfsprogs/io/xfs_io
+
+# Packages
+*.pkg
+*.dmg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+._*

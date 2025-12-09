@@ -1,0 +1,63 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install macFUSE
+        run: |
+          brew install --cask macfuse
+          
+      - name: Build
+        run: |
+          cd src
+          make clean
+          make
+          
+      - name: Create Package
+        run: |
+          cd src
+          make pkg
+          
+      - name: Get version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          
+      - name: Upload Package Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuse-xfs-${{ steps.get_version.outputs.VERSION }}.pkg
+          path: build/pkg/*.pkg
+          
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Download Package
+        uses: actions/download-artifact@v4
+        with:
+          name: fuse-xfs-${{ steps.get_version.outputs.VERSION }}.pkg
+          path: packages/
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: packages/*.pkg
+          generate_release_notes: true
+          draft: false
+          prerelease: false

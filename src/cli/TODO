@@ -1,0 +1,2 @@
+getxattr can be supported, since XFS supports attributes. This requires us to traverse the attribute fork.
+readlink still needs to be supported.

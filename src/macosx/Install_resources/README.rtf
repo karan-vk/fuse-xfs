@@ -1,0 +1,43 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1138\cocoasubrtf320
+{\fonttbl\f0\fnil\fcharset0 Monaco;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww15040\viewh9400\viewkind0
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f0\fs22 \cf0 \
+\pard\pardeftab720
+\cf0 Fuse-xfs provides XFS Filesystem support for FUSE.\
+\
+This software is based on both fuse-ext2, and xfsprogs packages.\
+\
+This software should be considered as alpha. Although the software attempts to open the device in Read Only mode, no guarantee is made that the XFS filesystem will remain unaltered by this software. I cannot guarantee that this software will not degrade or affect the performance of macOS (although I have seen no evidence of this during tests). \
+\
+Use of this software is entirely at your own risk.\
+\
+Dependencies\
+------------\
+\
+Fuse-xfs requires macFUSE (successor to OSXFUSE/MacFUSE)\
+\
+- macOS 10.15 and later (Intel):\
+	macFUSE from https://macfuse.github.io/\
+- macOS 11.0 and later (Apple Silicon M1/M2/M3):\
+	macFUSE from https://macfuse.github.io/\
+\
+\
+Usage\
+-----\
+\
+Usage:    fuse-xfs [-p] [-l] [-u] <device|image_file> -- <mount_point> [-o option[,...]]\
+\
+Options:  All options after "--" are passed to the fuse subsystem\
+          Please see details in the manual.\
+\
+Example:  fuse-xfs /dev/rdisk1s1 -- /mnt/xfs\
+\
+\
+Contact\
+-------\
+\
+Alexandre Hardy <alexandre.hardy@gmail.com>\
+}

@@ -1,0 +1,3 @@
+rm cli rcopy
+gcc -g -o cli -I../xfsprogs/include -I../xfsutil cli.c ../xfsutil/xfsutil.c ../lib/libxfs.a -lreadline
+gcc -g -o rcopy -I../xfsprogs/include -I../xfsutil rcopy.c ../xfsutil/xfsutil.c ../lib/libxfs.a -lreadline
