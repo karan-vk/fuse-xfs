@@ -214,17 +214,23 @@ xfs_dir2_sf_put_offset(xfs_dir2_sf_entry_t *sfep, xfs_dir2_data_aoff_t off)
 
 static inline int xfs_dir2_sf_entsize_byname(xfs_dir2_sf_t *sfp, int len)
 {
-	return ((uint)sizeof(xfs_dir2_sf_entry_t) - 1 + (len) - \
-		((sfp)->hdr.i8count == 0) * \
-		((uint)sizeof(xfs_dir2_ino8_t) - (uint)sizeof(xfs_dir2_ino4_t)));
+	/*
+	 * Entry size = struct header (3 bytes: namelen + offset) + name + inode
+	 * sizeof(xfs_dir2_sf_entry_t) includes a 1-byte name placeholder
+	 */
+	return ((uint)sizeof(xfs_dir2_sf_entry_t) - 1 + (len) + \
+		((sfp)->hdr.i8count ? \
+		(uint)sizeof(xfs_dir2_ino8_t) : \
+		(uint)sizeof(xfs_dir2_ino4_t)));
 }
 
 static inline int
 xfs_dir2_sf_entsize_byentry(xfs_dir2_sf_t *sfp, xfs_dir2_sf_entry_t *sfep)
 {
-	return ((uint)sizeof(xfs_dir2_sf_entry_t) - 1 + (sfep)->namelen - \
-		((sfp)->hdr.i8count == 0) * \
-		((uint)sizeof(xfs_dir2_ino8_t) - (uint)sizeof(xfs_dir2_ino4_t)));
+	return ((uint)sizeof(xfs_dir2_sf_entry_t) - 1 + (sfep)->namelen + \
+		((sfp)->hdr.i8count ? \
+		(uint)sizeof(xfs_dir2_ino8_t) : \
+		(uint)sizeof(xfs_dir2_ino4_t)));
 }
 
 /*
@@ -233,17 +239,22 @@ xfs_dir2_sf_entsize_byentry(xfs_dir2_sf_t *sfp, xfs_dir2_sf_entry_t *sfep)
  */
 static inline int xfs_dir3_sf_entsize_byname(xfs_dir2_sf_t *sfp, int len)
 {
-	return ((uint)sizeof(xfs_dir2_sf_entry_t) - 1 + (len) + 1 - \
-		((sfp)->hdr.i8count == 0) * \
-		((uint)sizeof(xfs_dir2_ino8_t) - (uint)sizeof(xfs_dir2_ino4_t)));
+	/*
+	 * FTYPE entry size = struct header + name + ftype (1 byte) + inode
+	 */
+	return ((uint)sizeof(xfs_dir2_sf_entry_t) - 1 + (len) + 1 + \
+		((sfp)->hdr.i8count ? \
+		(uint)sizeof(xfs_dir2_ino8_t) : \
+		(uint)sizeof(xfs_dir2_ino4_t)));
 }
 
 static inline int
 xfs_dir3_sf_entsize_byentry(xfs_dir2_sf_t *sfp, xfs_dir2_sf_entry_t *sfep)
 {
-	return ((uint)sizeof(xfs_dir2_sf_entry_t) - 1 + (sfep)->namelen + 1 - \
-		((sfp)->hdr.i8count == 0) * \
-		((uint)sizeof(xfs_dir2_ino8_t) - (uint)sizeof(xfs_dir2_ino4_t)));
+	return ((uint)sizeof(xfs_dir2_sf_entry_t) - 1 + (sfep)->namelen + 1 + \
+		((sfp)->hdr.i8count ? \
+		(uint)sizeof(xfs_dir2_ino8_t) : \
+		(uint)sizeof(xfs_dir2_ino4_t)));
 }
 
 static inline xfs_dir2_sf_entry_t *xfs_dir2_sf_firstentry(xfs_dir2_sf_t *sfp)
@@ -258,6 +269,42 @@ xfs_dir2_sf_nextentry(xfs_dir2_sf_t *sfp, xfs_dir2_sf_entry_t *sfep)
 	return ((xfs_dir2_sf_entry_t *) \
 		((char *)(sfep) + xfs_dir2_sf_entsize_byentry(sfp,sfep)));
 }
+
+/*
+ * Get next entry for FTYPE-enabled filesystem.
+ */
+static inline xfs_dir2_sf_entry_t *
+xfs_dir3_sf_nextentry(xfs_dir2_sf_t *sfp, xfs_dir2_sf_entry_t *sfep)
+{
+	return ((xfs_dir2_sf_entry_t *) \
+		((char *)(sfep) + xfs_dir3_sf_entsize_byentry(sfp,sfep)));
+}
+
+/*
+ * Helper macros for ftype-aware shortform directory operations.
+ * These check if the filesystem has FTYPE enabled and call the
+ * appropriate function (V2 for non-ftype, V3 for ftype).
+ * Usage: XFS_DIR2_SF_*_FTYPE(mp, ...) where mp is xfs_mount_t*
+ */
+#define XFS_DIR2_SF_ENTSIZE_BYNAME_FTYPE(mp, sfp, len) \
+	(xfs_sb_version_hasftype(&(mp)->m_sb) ? \
+		xfs_dir3_sf_entsize_byname(sfp, len) : \
+		xfs_dir2_sf_entsize_byname(sfp, len))
+
+#define XFS_DIR2_SF_ENTSIZE_BYENTRY_FTYPE(mp, sfp, sfep) \
+	(xfs_sb_version_hasftype(&(mp)->m_sb) ? \
+		xfs_dir3_sf_entsize_byentry(sfp, sfep) : \
+		xfs_dir2_sf_entsize_byentry(sfp, sfep))
+
+#define XFS_DIR2_SF_NEXTENTRY_FTYPE(mp, sfp, sfep) \
+	(xfs_sb_version_hasftype(&(mp)->m_sb) ? \
+		xfs_dir3_sf_nextentry(sfp, sfep) : \
+		xfs_dir2_sf_nextentry(sfp, sfep))
+
+#define XFS_DIR2_SF_INUMBERP_FTYPE(mp, sfep) \
+	(xfs_sb_version_hasftype(&(mp)->m_sb) ? \
+		xfs_dir3_sf_inumberp(sfep) : \
+		xfs_dir2_sf_inumberp(sfep))
 
 /*
  * Functions.

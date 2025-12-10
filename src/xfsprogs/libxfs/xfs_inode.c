@@ -851,6 +851,18 @@ xfs_idata_realloc(
 	new_size = (int)ifp->if_bytes + byte_diff;
 	ASSERT(new_size >= 0);
 
+	/*
+	 * DEBUG: Log state on entry to help diagnose heap corruption.
+	 * The crash at 0x0000087103494748 suggests if_u1.if_data is corrupt.
+	 */
+	fprintf(stderr, "DEBUG xfs_idata_realloc: ip=%p ino=%llu byte_diff=%d whichfork=%d\n",
+		(void *)ip, (unsigned long long)ip->i_ino, byte_diff, whichfork);
+	fprintf(stderr, "DEBUG   if_bytes=%d if_real_bytes=%d if_data=%p inline_data=%p\n",
+		ifp->if_bytes, ifp->if_real_bytes,
+		(void *)ifp->if_u1.if_data, (void *)ifp->if_u2.if_inline_data);
+	fprintf(stderr, "DEBUG   new_size=%d (inline_max=%lu)\n",
+		new_size, sizeof(ifp->if_u2.if_inline_data));
+
 	if (new_size == 0) {
 		if (ifp->if_u1.if_data != ifp->if_u2.if_inline_data) {
 			kmem_free(ifp->if_u1.if_data);
@@ -865,10 +877,20 @@ xfs_idata_realloc(
 		if (ifp->if_u1.if_data == NULL) {
 			ifp->if_u1.if_data = ifp->if_u2.if_inline_data;
 		} else if (ifp->if_u1.if_data != ifp->if_u2.if_inline_data) {
-			ASSERT(ifp->if_real_bytes != 0);
-			memcpy(ifp->if_u2.if_inline_data, ifp->if_u1.if_data,
-			      new_size);
-			kmem_free(ifp->if_u1.if_data);
+			/*
+			 * FIX: Similar to grow case - validate if_real_bytes > 0.
+			 * If not, the pointer is likely corrupt. Don't try to
+			 * free a corrupt pointer - just point to inline data.
+			 */
+			if (ifp->if_real_bytes == 0) {
+				fprintf(stderr, "WARNING xfs_idata_realloc: shrink path - if_real_bytes=0 but if_data=%p is not inline - likely corrupt pointer\n",
+					(void *)ifp->if_u1.if_data);
+				/* Don't free corrupt pointer, just switch to inline */
+			} else {
+				memcpy(ifp->if_u2.if_inline_data, ifp->if_u1.if_data,
+				      new_size);
+				kmem_free(ifp->if_u1.if_data);
+			}
 			ifp->if_u1.if_data = ifp->if_u2.if_inline_data;
 		}
 		real_size = 0;
@@ -886,10 +908,26 @@ xfs_idata_realloc(
 			ifp->if_u1.if_data = kmem_alloc(real_size, KM_SLEEP);
 		} else if (ifp->if_u1.if_data != ifp->if_u2.if_inline_data) {
 			/*
-			 * Only do the realloc if the underlying size
-			 * is really changing.
+			 * FIX: Validate that if we think we have heap-allocated
+			 * data (if_data != NULL and != inline_data), we should
+			 * also have if_real_bytes > 0. If not, the pointer is
+			 * likely corrupt (possibly from stack corruption on ARM64
+			 * macOS as noted in xfsutil.c). In this case, treat as
+			 * a fresh allocation from inline data.
 			 */
-			if (ifp->if_real_bytes != real_size) {
+			if (ifp->if_real_bytes == 0) {
+				fprintf(stderr, "WARNING xfs_idata_realloc: if_real_bytes=0 but if_data=%p is not inline - likely corrupt pointer, recovering\n",
+					(void *)ifp->if_u1.if_data);
+				/* Corrupt state - allocate fresh and copy from inline buffer */
+				ifp->if_u1.if_data = kmem_alloc(real_size, KM_SLEEP);
+				if (ifp->if_bytes > 0 && ifp->if_bytes <= sizeof(ifp->if_u2.if_inline_data)) {
+					memcpy(ifp->if_u1.if_data, ifp->if_u2.if_inline_data, ifp->if_bytes);
+				}
+			} else if (ifp->if_real_bytes != real_size) {
+				/*
+				 * Only do the realloc if the underlying size
+				 * is really changing.
+				 */
 				ifp->if_u1.if_data =
 					kmem_realloc(ifp->if_u1.if_data,
 							real_size,

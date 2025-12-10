@@ -1065,12 +1065,19 @@ xfs_dir2_sf_to_block(
 		}
 		/*
 		 * Copy a real entry.
+		 * Use ftype-aware inumberp and nextentry for correct access.
 		 */
 		dep = (xfs_dir2_data_entry_t *)((char *)block + newoffset);
 		dep->inumber = cpu_to_be64(xfs_dir2_sf_get_inumber(sfp,
-				xfs_dir2_sf_inumberp(sfep)));
+				XFS_DIR2_SF_INUMBERP_FTYPE(mp, sfep)));
 		dep->namelen = sfep->namelen;
 		memcpy(dep->name, sfep->name, dep->namelen);
+		/*
+		 * Set ftype in the data entry if filesystem has ftype enabled.
+		 */
+		if (xfs_sb_version_hasftype(&mp->m_sb)) {
+			xfs_dir3_data_put_ftype(dep, xfs_dir3_sf_get_ftype(sfep));
+		}
 		tagp = xfs_dir2_data_entry_tag_p(dep);
 		*tagp = cpu_to_be16((char *)dep - (char *)block);
 		xfs_dir2_data_log_entry(tp, bp, dep);
@@ -1084,7 +1091,7 @@ xfs_dir2_sf_to_block(
 		if (++i == sfp->hdr.count)
 			sfep = NULL;
 		else
-			sfep = xfs_dir2_sf_nextentry(sfp, sfep);
+			sfep = XFS_DIR2_SF_NEXTENTRY_FTYPE(mp, sfp, sfep);
 	}
 	/* Done with the temporary buffer */
 	kmem_free(buf);

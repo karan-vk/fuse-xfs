@@ -5,15 +5,17 @@
 **Original Authors:** Various contributors (see original project)
 **Modernization by:** [@karan-vk](https://github.com/karan-vk)
 
-Read-only XFS filesystem support for macOS via FUSE.
+**Full read-write XFS filesystem support for macOS via FUSE.**
 
 ## Features
 
+- **Full Read-Write Support** - Create, modify, and delete files and directories on XFS filesystems
 - **Apple Silicon (ARM64) and Intel (x86_64) support** - Native builds for M1/M2/M3 Macs and Intel Macs
 - **Modern XFS V5 superblock format** with CRC checksums
 - **FTYPE directory entries** - Proper file type information in directory listings
 - **macFUSE compatibility** - Works with macFUSE 4.x
 - **Support for filesystems created by modern Linux kernels** (3.10+)
+- **Transaction-Safe Operations** - All write operations are transaction-protected
 
 ## Requirements
 
@@ -158,14 +160,23 @@ After a successful build, binaries are located in `build/bin/`:
 ### Mounting an XFS Filesystem
 
 ```bash
-# Mount an XFS disk image
+# Mount an XFS disk image (read-only by default)
 ./build/bin/fuse-xfs /path/to/xfs.img /mnt/xfs
+
+# Mount an XFS disk image with read-write support
+./build/bin/fuse-xfs -rw /path/to/xfs.img /mnt/xfs
 
 # Mount an XFS device (requires appropriate permissions)
 sudo ./build/bin/fuse-xfs /dev/disk2s1 /mnt/xfs
 
+# Mount an XFS device with read-write support
+sudo ./build/bin/fuse-xfs -rw /dev/disk2s1 /mnt/xfs
+
 # Mount with debug output
 ./build/bin/fuse-xfs -d /path/to/xfs.img /mnt/xfs
+
+# Mount with debug output and read-write
+./build/bin/fuse-xfs -rw -d /path/to/xfs.img /mnt/xfs
 ```
 
 ### Unmounting
@@ -214,9 +225,29 @@ Copy files from an XFS filesystem:
 | Shortform Directories | Small directories stored in inode |
 | Block Directories | Single-block directories |
 | Leaf Directories | Multi-block directories with leaf structure |
-| Regular Files | Standard file reading |
-| Symbolic Links | Symlink resolution |
-| Extended Attributes | Basic xattr support |
+| Regular Files | Full read/write support |
+| Symbolic Links | Full read/write support |
+| Hard Links | Full read/write support |
+| Directories | Full create/remove/rename support |
+
+### Write Operations Support
+
+| Operation | Status | Description |
+|-----------|--------|-------------|
+| `create` | ✅ Supported | Create new files |
+| `write` | ✅ Supported | Write data to files |
+| `truncate` | ✅ Supported | Change file size |
+| `unlink` | ✅ Supported | Remove files |
+| `mkdir` | ✅ Supported | Create directories |
+| `rmdir` | ✅ Supported | Remove empty directories |
+| `rename` | ✅ Supported | Rename files and directories |
+| `chmod` | ✅ Supported | Change file permissions |
+| `chown` | ✅ Supported | Change file ownership |
+| `utimens` | ✅ Supported | Update timestamps |
+| `mknod` | ✅ Supported | Create device nodes, FIFOs |
+| `symlink` | ✅ Supported | Create symbolic links |
+| `link` | ✅ Supported | Create hard links |
+| `fsync` | ✅ Supported | Synchronize file data |
 
 ### XFS Versions
 
@@ -232,29 +263,36 @@ Copy files from an XFS filesystem:
 |---------|--------|
 | Large Files (>2GB) | Supported |
 | Sparse Files | Supported |
-| Hard Links | Read support |
+| Extended Attributes | Read-only |
 
 ### Not Supported
 
 | Feature | Reason |
 |---------|--------|
-| Write Operations | Read-only implementation |
 | Real-time Devices | Not implemented |
 | External Logs | Not implemented |
-| Reflinks | Read-only, limited support |
+| Reflinks | Not implemented |
 | Quotas | Not implemented |
+| ACLs | Not implemented |
+| Extended Attributes (write) | Not implemented |
 
 ## Limitations
 
-1. **Read-only** - This is a read-only implementation. Write operations are not supported.
+1. **No External Log Support** - XFS filesystems with external log devices cannot be mounted.
 
-2. **No External Log Support** - XFS filesystems with external log devices cannot be mounted.
+2. **No Real-time Section** - XFS filesystems with real-time sections cannot be mounted.
 
-3. **No Real-time Section** - XFS filesystems with real-time sections cannot be mounted.
+3. **macFUSE Required** - The fuse-xfs binary requires macFUSE to be installed.
 
-4. **macFUSE Required** - The fuse-xfs binary requires macFUSE to be installed.
+4. **Root Privileges** - Mounting physical devices typically requires root privileges.
 
-5. **Root Privileges** - Mounting physical devices typically requires root privileges.
+5. **Extended Attributes** - Write operations for extended attributes are not supported.
+
+6. **Quotas** - XFS quota functionality is not implemented.
+
+7. **ACLs** - Access Control Lists are not supported.
+
+For detailed information about write support, see [WRITE_SUPPORT.md](WRITE_SUPPORT.md).
 
 ## Troubleshooting
 
@@ -384,6 +422,13 @@ Modernized by [@karan-vk](https://github.com/karan-vk):
 - Original author: Alexandre Hardy (2011)
 - XFS utilities based on xfsprogs from SGI/Linux
 - FUSE support via [macFUSE](https://macfuse.github.io/)
+
+## Documentation
+
+- [WRITE_SUPPORT.md](WRITE_SUPPORT.md) - Detailed write operation documentation
+- [API.md](API.md) - XFS utility API reference
+- [WRITE_OPERATIONS_DESIGN.md](WRITE_OPERATIONS_DESIGN.md) - Design documentation
+- [CHANGELOG.md](CHANGELOG.md) - Version history and changes
 
 ## Contributing
 

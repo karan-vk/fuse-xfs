@@ -18,10 +18,11 @@
 extern struct fuse_operations fuse_xfs_operations;
 
 void usage(int argc, char *argv[]) {
-    fprintf(stderr, "fuse-xfs [-p] [-l] [-u] device/file [-- fuse-opts]\n");
+    fprintf(stderr, "fuse-xfs [-p] [-l] [-u] [-rw] device/file [-- fuse-opts]\n");
     fprintf(stderr, "         [-p]     Only probe if the device contains an XFS filesystem.\n");
     fprintf(stderr, "         [-l]     Print the label of the XFS filesystem.\n");
     fprintf(stderr, "         [-u]     Print the UUID of the XFS filesystem.\n");
+    fprintf(stderr, "         [-rw]    Mount read-write (default is read-only).\n");
     fprintf(stderr, "         --       All options after -- are passed on to fuse.\n");
     fprintf(stderr, "                  The mount point must be supplied as the first argument.\n");
 }
@@ -34,6 +35,7 @@ int parse_options(struct fuse_xfs_options* opts, int argc, char *argv[], int *ne
     }
     
     opts->device = NULL;
+    opts->readonly = 1;  /* Default to read-only for safety */
     
     new_argv[0] = argv[0];
         
@@ -46,6 +48,9 @@ int parse_options(struct fuse_xfs_options* opts, int argc, char *argv[], int *ne
         }
         else if (!strcmp(argv[i], "-u")) {
             opts->printuuid = 1;
+        }
+        else if (!strcmp(argv[i], "-rw")) {
+            opts->readonly = 0;  /* Enable read-write mode */
         }
         else opts->device = argv[i];
     }
@@ -95,7 +100,8 @@ int xfs_probe(struct fuse_xfs_options* opts) {
         return 0;
     }
     
-    fuse_xfs_mp = mount_xfs("probe", opts->device);
+    /* Mount with appropriate read-only flag */
+    fuse_xfs_mp = mount_xfs_ex("fuse-xfs", opts->device, opts->readonly);
     if (fuse_xfs_mp == NULL) {
         fprintf(stderr, "%s doesn't appear to have a valid XFS filesystem\n", opts->device);
         return 0;
@@ -152,6 +158,13 @@ int main(int argc, char* argv[], char* envp[], char** exec_path) {
         printf("\n");
         libxfs_umount(opts.xfs_mount);
         return 0;
+    }
+    
+    /* Set the global read-only flag for FUSE handlers */
+    fuse_xfs_set_readonly(opts.readonly);
+    
+    if (!opts.readonly) {
+        fprintf(stderr, "Mounting %s read-write\n", opts.device);
     }
         
     return fuse_main(fuse_argc, fuse_argv, &fuse_xfs_operations, &opts);

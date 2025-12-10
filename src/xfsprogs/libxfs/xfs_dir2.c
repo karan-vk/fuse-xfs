@@ -17,6 +17,7 @@
  */
 
 #include <xfs.h>
+#include <stddef.h>
 
 struct xfs_name xfs_name_dotdot = {"..", 2};
 
