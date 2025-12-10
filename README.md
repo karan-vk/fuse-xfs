@@ -1,6 +1,6 @@
 # fuse-xfs for macOS
 
-> **Modernized fork** - This project is a modernized fork of the original [fuse-xfs](https://code.google.com/archive/p/fuse-xfs/) project (formerly hosted on Google Code). Updated for Apple Silicon, modern macOS, and XFS V5 filesystem support.
+> **v2.0.0 - Now with Full Write Support!** This project is a modernized fork of the original [fuse-xfs](https://code.google.com/archive/p/fuse-xfs/) project (formerly hosted on Google Code). Updated for Apple Silicon, modern macOS, XFS V5 filesystem support, and **complete read-write operations**.
 
 **Original Authors:** Various contributors (see original project)
 **Modernization by:** [@karan-vk](https://github.com/karan-vk)
@@ -43,22 +43,28 @@ xcode-select --install
 
 ## Installation
 
-### Via Homebrew (Recommended)
+### macOS (Homebrew) - Recommended
 
-The easiest way to install fuse-xfs is via Homebrew:
+The easiest way to install fuse-xfs on macOS is via Homebrew:
 
 ```bash
-# Add the tap
-brew tap karan-vk/fuse-xfs
-
 # Install fuse-xfs
+brew install fuse-xfs
+
+# Or tap the repository first if not in core
+brew tap karan-vk/fuse-xfs
 brew install fuse-xfs
 ```
 
-**Note:** You must install macFUSE separately:
+### Prerequisites
+
+fuse-xfs requires macFUSE (formerly OSXFUSE) to be installed:
+
 ```bash
 brew install --cask macfuse
 ```
+
+**Note:** After installing macFUSE, you may need to enable the kernel extension in System Preferences > Security & Privacy.
 
 ### Via macOS Installer Package
 
@@ -396,7 +402,12 @@ mkfs.xfs -m crc=1,finobt=1 test_v5_finobt.img
 
 ## Version History
 
-- **0.2.1** - Current version with Apple Silicon and V5 XFS support
+- **2.0.0** - **Major Release** - Full read-write support for XFS filesystems
+  - Create, modify, and delete files and directories
+  - Transaction-safe write operations
+  - Support for symbolic links, hard links, and device nodes
+  - Complete POSIX operations (chmod, chown, utimens, etc.)
+- **0.2.1** - Apple Silicon and V5 XFS support
 - **0.2.0** - macFUSE migration, ARM64 support
 - **0.1.x** - Original osxfuse implementation
 
